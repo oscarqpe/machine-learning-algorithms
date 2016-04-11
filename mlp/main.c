@@ -22,9 +22,7 @@ int main()
     {
         char* tmp = strdup(buffer);
         const char* tok;
-        for (tok = strtok(tmp, ";");
-            tok && *tok;
-			tok = strtok(NULL, ";\n"))
+        for (tok = strtok(tmp, ";"); tok && *tok; tok = strtok(NULL, ";\n"))
         {
             printf("Field  %s\n", tok);
         }
