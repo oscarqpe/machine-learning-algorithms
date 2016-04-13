@@ -132,7 +132,7 @@ namespace mlp_parallel_c_sharp
                 //{
                 Parallel.For(1, numNeuronasPorCapa[i], index_j =>
                 {
-                    MLP[i, index_j, numFilasPorCapa[i] - 3] = 0;//Resetear NET
+                    MLP[i, index_j, numFilasPorCapa[i] - 3] = 0; //Resetear NET
 
                     /*for (int k = 0; k < numFilasPorCapa[i] - 3; k++)
                     {
