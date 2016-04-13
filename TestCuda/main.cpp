@@ -144,12 +144,12 @@ int main(int argc, const char * argv[]) {
 /////////////////////////////////////////////////
 ////////////////  ERROR    //////////////////////
 /////////////////////////////////////////////////
-    
+    /*
     error[0] = 0;
     for (int i = 1; i <= numDatosSalida; i++) {
         error[i] = pow(real[i] - MLP[numCapas-1][i][numFilasPorCapa[numCapas-1]-2], 2)/2 ;
         error[0] += error[i];
-    }
+    }*/
 
 /////////////////////////////////////////////////
 ////////////////  BACKWARD    ///////////////////
@@ -165,7 +165,7 @@ int main(int argc, const char * argv[]) {
     for (int i = 0; i < numCapas; i++) {
         for (int j = 0; j < numNeuronasPorCapa[i]; j++) {
             for (int k = 0; k < numNeuronasPorCapaAnterior[i] + 3; k++) {
-                cout<< MLP[i][j][k]<<" - ";
+                cout<< MLP[i][j][k]<<"\t";
             }
             cout<<endl;
         }

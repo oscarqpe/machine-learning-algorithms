@@ -19,3 +19,8 @@ mlp/obj
 mlp/mlp.cbp
 mlp/mlp.layout
 mlp/mlp.depend
+/mlp_parallel_c_sharp/mlp_parallel_c_sharp/bin
+/mlp_parallel_c_sharp/mlp_parallel_c_sharp/obj
+/mlp_parallel_c_sharp/mlp_parallel_c_sharp/*.csproj
+/mlp_parallel_c_sharp/mlp_parallel_c_sharp/*.config
+/mlp_parallel_c_sharp/mlp_parallel_c_sharp/Properties
