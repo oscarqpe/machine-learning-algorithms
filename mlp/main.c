@@ -40,14 +40,11 @@ int main()
     {
         char* tmp = strdup(buffer);
         const char* tok;
-<<<<<<< HEAD
-        for (tok = strtok(tmp, ";"); tok && *tok; tok = strtok(NULL, ";\n"))
-=======
+
         jj = 0;
         for (tok = strtok(tmp, ";");
             tok && *tok;
 			tok = strtok(NULL, ";\n"))
->>>>>>> 0a15d005d034d4826073d8295611c2aa35da9c7c
         {
             //printf("Field  %s\n", tok);
             data[ii][jj] = atof(tok);
