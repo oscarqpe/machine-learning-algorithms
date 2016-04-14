@@ -15,14 +15,10 @@
 
 #define net(mlp, x,y,z)  mlp[ (x * HiddenLayers + y)*NeuronsByLayer + z ] 
 
-
-
-
  double act_funct(double val) {
     return 1.0/(1.0 + pow(epsilon, val));
 }
-                
-                
+
 void init (double * layer) {
      for (int h = 0; h < HiddenLayers; h++) {
         for (int i = 0; i < NeuronByLayer; i++) {
@@ -30,6 +26,7 @@ void init (double * layer) {
                 float random = (10 + (rand() % 89));
                 net(layer, h, i, j) = random / 100;
                 net(layer, h, NeuronByLayer, j) = 0.0;
+                layer[(h * 10 + NeuronByLayer) * NeuronsByLayer + j] = 0.0;
             }
         }
         net(layer,h,NeuronByLayer,NeuronByLayer + 2) = 1;

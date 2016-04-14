@@ -17,6 +17,7 @@ void forward (int *numNeuronasPorCapa, int * numFilasPorCapa, double *** MLP){
     
     for (int i = 1; i < numCapas; i++) {
         
+      //  int j = threadIdx.x ;
         parallel_for (int j = 1; j < numNeuronasPorCapa[i]; j++) {
             
             MLP[i][j][numFilasPorCapa[i]-3] = 0 ;//Resetear NET
