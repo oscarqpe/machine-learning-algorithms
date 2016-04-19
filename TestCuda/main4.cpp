@@ -12,16 +12,14 @@
 
 
 
-#define epsilon exp(1)
+#define euler exp(1)
 
-#define NeuronByLayer 5
-
+#define NeuronsByLayer 3
 #define HiddenLayers 3
-#define NeuronsByLayer (NeuronByLayer + 1)
-#define outputSize  (NeuronByLayer + 4)
+#define RowsByLayer NeuronByLayer + 3
 
 //#define net(mlp, x,y,z)  mlp[(x * NeuronsByLayer + y) * outputSize + z]
-#define net(mlp, x,y,z)  mlp[(z * NeuronsByLayer + y) * HiddenLayers + x]
+#define M(mlp, z,y,x)  mlp[(y + NeuronsByLayer * x ) + ( z * NeuronsByLayer * RowsByLayer)]
 using namespace std;
 int main(int argc, const char * argv[]) {
 
@@ -39,8 +37,6 @@ int main(int argc, const char * argv[]) {
     double error[numDatosSalida + 1];
 
     double lRate = 0.5;
-    //cout<< "Ingrese el learning rate: ";
-    //cin>> lRate;
 
     //cout<<"Ingrese el numero de capas intermedias: ";
     //cin >> numCapas;
