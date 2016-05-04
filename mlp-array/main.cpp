@@ -25,6 +25,7 @@
 #include <string>
 #include <math.h>
 #include <ctime>
+#include <vector>
 
 using namespace std;
 
@@ -51,6 +52,7 @@ void generar_deltas(int pos_target,int pos, int capaAux);
 void actualizar_pesos(int posInput, int posDelta, int cant_input, int cant_deltas, int numeroCapa);
 void detalles_test(int contadorCasos, int contador);
 
+
 //  VARIABLES GLOBALES
 
 _datos *point_data;
@@ -65,14 +67,28 @@ int total_array;
 double learn_rate;
 int total_epocas;
 double **sumatorias_error;
-double target[8][8] = {{0.99, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01},
-                    {0.01, 0.99, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01},
-                    {0.01, 0.01, 0.99, 0.01, 0.01, 0.01, 0.01, 0.01},
-                    {0.01, 0.01, 0.01, 0.99, 0.01, 0.01, 0.01, 0.01},
-                    {0.01, 0.01, 0.01, 0.01, 0.99, 0.01, 0.01, 0.01},
-                    {0.01, 0.01, 0.01, 0.01, 0.01, 0.99, 0.01, 0.01},
-                    {0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.99, 0.01},
-                    {0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.99}};
+
+// Para caras
+//double target[8][8] = {{0.99, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01},
+//                    {0.01, 0.99, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01},
+//                    {0.01, 0.01, 0.99, 0.01, 0.01, 0.01, 0.01, 0.01},
+//                    {0.01, 0.01, 0.01, 0.99, 0.01, 0.01, 0.01, 0.01},
+//                    {0.01, 0.01, 0.01, 0.01, 0.99, 0.01, 0.01, 0.01},
+//                    {0.01, 0.01, 0.01, 0.01, 0.01, 0.99, 0.01, 0.01},
+//                    {0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.99, 0.01},
+//                    {0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.99}};
+
+// Para Mnist
+double target[10][10] = {{0.99, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01,0.01,0.01},
+    {0.01, 0.99, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01,0.01,0.01},
+    {0.01, 0.01, 0.99, 0.01, 0.01, 0.01, 0.01, 0.01,0.01,0.01},
+    {0.01, 0.01, 0.01, 0.99, 0.01, 0.01, 0.01, 0.01,0.01,0.01},
+    {0.01, 0.01, 0.01, 0.01, 0.99, 0.01, 0.01, 0.01,0.01,0.01},
+    {0.01, 0.01, 0.01, 0.01, 0.01, 0.99, 0.01, 0.01,0.01,0.01},
+    {0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.99, 0.01,0.01,0.01},
+    {0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.99,0.01,0.01},
+    {0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01,0.99,0.01},
+    {0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01,0.01,0.99}};
 //double target[2][2] ={{0.99,0.01},{0.01,0.99}};
 //double target[3][3] ={{0.99,0.01,0.01},{0.01,0.99,0.01},{0.01,0.01,0.99}};
 
@@ -92,9 +108,10 @@ int main(int argc, const char * argv[])
     neurona = (int *)malloc(sizeof(int)*total_capas+1);
     
     //  Estructura de la neurona el indice del array neurona es el numero de capas y el valor es la cantidad de neuronas
-    neurona[0] = 58; // capa entrada
+//    neurona[0] = 58; // capa entrada
+    neurona[0] = 64; // capa entrada
     neurona[1] = 9;  // capa Intermedia
-    neurona[2] = 8;  // capa de salida
+    neurona[2] = 10;  // capa de salida
     neurona[3] = 0;  // capa auxiliar [siempre cero]
     
     total_input = neurona[0];
@@ -138,8 +155,9 @@ int main(int argc, const char * argv[])
 //  _____________
     
     //  Generamos la data en una estructura de listas enlazadas
-    obtener_data("cara.csv",total_input);
+    obtener_data("mnist.csv",total_input);
     //  Algoritmo MLP
+    cout<<"Train..."<<endl;
     mlp();
     
     
@@ -147,8 +165,9 @@ int main(int argc, const char * argv[])
 //  ______
     
     //  Generamos la data en una estructura de listas enlazadas
-    obtener_data("cara_test.csv",total_input);
+    obtener_data("mnist_test.csv",total_input);
     //  Corremos el Forward Propagation para el test
+    cout<<"Test..."<<endl;
     mlp_test();
     
     
@@ -168,7 +187,7 @@ int main(int argc, const char * argv[])
 //  MLP FORWARD Y BACKWARD PROPAGATION
 void mlp()
 {
-    total_epocas = 7000;
+    total_epocas = 1000;
     _datos *data;
     
     start = clock();
@@ -238,15 +257,16 @@ void mlp_test()
         for (int i = 0; i < total_salidas; i++)
         {
             //  Redondeamos la salida a 0 o 1
+//            salidaFinal = (point_capa[pos_resultado+i]);
             salidaFinal = (int)(point_capa[pos_resultado+i]+0.5);
             if(res-1 == i && salidaFinal == 1)
             {
                 contador++;
             }
-//            cout<<salidaFinal<<" - ";
+            cout<<salidaFinal<<" - ";
         }
         
-//        cout<<"- "<<res<<endl;
+        cout<<"- "<<res-1<<endl;
         data = data->sig;
     }
     
@@ -257,9 +277,11 @@ void mlp_test()
 //  INICIALIZAMOS LAS ENTRADAS PARA LA PRIMERA CAPA DE CADA CASO DE ENTRENAMIENTO
 void copiar_input(_datos *origen, int cantidad)
 {
+    float aux;
     point_capa[0] = 1;
     for (int i=1; i<cantidad+1; i++) {
-        point_capa[i] = origen->data[i-1];
+        aux = origen->data[i-1];
+        point_capa[i] = aux;
     }
 }
 
@@ -369,13 +391,13 @@ void obtener_data(string archivo,int total_input){
             b = (int)value.find(';',a+1);
             c = b;
             numero = value.substr(a+1,b-a-1);
-            d_array[i] = stof(numero);
+            d_array[i] = stof(numero)/255;
         }
         
         //  almacenamos los datos en la lista y enlazamos
         a = (int)value.find(';');
         numero = value.substr(0,a);
-        nuevo->target = stoi(numero);
+        nuevo->target = stoi(numero)+1;
         nuevo->data = d_array;
         puntero_aux->sig = nuevo;
         nuevo->sig = NULL;
@@ -432,8 +454,6 @@ void imprimir_array()
         cout<<point_capa[i]<<"|";
     }
 }
-
-
 
 
 
