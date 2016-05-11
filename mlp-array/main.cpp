@@ -277,7 +277,7 @@ void mlp_test()
 //  INICIALIZAMOS LAS ENTRADAS PARA LA PRIMERA CAPA DE CADA CASO DE ENTRENAMIENTO
 void copiar_input(_datos *origen, int cantidad)
 {
-    float aux;
+    double aux;
     point_capa[0] = 1;
     for (int i=1; i<cantidad+1; i++) {
         aux = origen->data[i-1];
