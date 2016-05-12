@@ -25,6 +25,7 @@
 #include <string>
 #include <math.h>
 #include <ctime>
+#include <vector>
 
 using namespace std;
 
@@ -49,7 +50,9 @@ double f_signoid(double numero);
 void multiplicacion_punto(int ,int ,int , int );
 void generar_deltas(int pos_target,int pos, int capaAux);
 void actualizar_pesos(int posInput, int posDelta, int cant_input, int cant_deltas, int numeroCapa);
-void detalles_test(int contadorCasos, int contador);
+void detalles_test(int contadorCasos, int contador, int clasificados);
+void matriz_confusion();
+
 
 //  VARIABLES GLOBALES
 
@@ -65,17 +68,40 @@ int total_array;
 double learn_rate;
 int total_epocas;
 double **sumatorias_error;
-double target[8][8] = {{0.99, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01},
-                    {0.01, 0.99, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01},
-                    {0.01, 0.01, 0.99, 0.01, 0.01, 0.01, 0.01, 0.01},
-                    {0.01, 0.01, 0.01, 0.99, 0.01, 0.01, 0.01, 0.01},
-                    {0.01, 0.01, 0.01, 0.01, 0.99, 0.01, 0.01, 0.01},
-                    {0.01, 0.01, 0.01, 0.01, 0.01, 0.99, 0.01, 0.01},
-                    {0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.99, 0.01},
-                    {0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.99}};
+
+// Para caras
+//double target[8][8] = {{0.99, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01},
+//                    {0.01, 0.99, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01},
+//                    {0.01, 0.01, 0.99, 0.01, 0.01, 0.01, 0.01, 0.01},
+//                    {0.01, 0.01, 0.01, 0.99, 0.01, 0.01, 0.01, 0.01},
+//                    {0.01, 0.01, 0.01, 0.01, 0.99, 0.01, 0.01, 0.01},
+//                    {0.01, 0.01, 0.01, 0.01, 0.01, 0.99, 0.01, 0.01},
+//                    {0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.99, 0.01},
+//                    {0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.99}};
+
+// Para Mnist
+double target[10][10] = {{0.99, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01,0.01,0.01},
+    {0.01, 0.99, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01,0.01,0.01},
+    {0.01, 0.01, 0.99, 0.01, 0.01, 0.01, 0.01, 0.01,0.01,0.01},
+    {0.01, 0.01, 0.01, 0.99, 0.01, 0.01, 0.01, 0.01,0.01,0.01},
+    {0.01, 0.01, 0.01, 0.01, 0.99, 0.01, 0.01, 0.01,0.01,0.01},
+    {0.01, 0.01, 0.01, 0.01, 0.01, 0.99, 0.01, 0.01,0.01,0.01},
+    {0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.99, 0.01,0.01,0.01},
+    {0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.99,0.01,0.01},
+    {0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01,0.99,0.01},
+    {0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01,0.01,0.99}};
 //double target[2][2] ={{0.99,0.01},{0.01,0.99}};
 //double target[3][3] ={{0.99,0.01,0.01},{0.01,0.99,0.01},{0.01,0.01,0.99}};
-
+double mConf[10][10] = {{0,0,0,0,0,0,0,0,0,0},
+                        {0,0,0,0,0,0,0,0,0,0},
+                        {0,0,0,0,0,0,0,0,0,0},
+                        {0,0,0,0,0,0,0,0,0,0},
+                        {0,0,0,0,0,0,0,0,0,0},
+                        {0,0,0,0,0,0,0,0,0,0},
+                        {0,0,0,0,0,0,0,0,0,0},
+                        {0,0,0,0,0,0,0,0,0,0},
+                        {0,0,0,0,0,0,0,0,0,0},
+                        {0,0,0,0,0,0,0,0,0,0}};
 
 //  VARIABLES PARA EL CLOCK
 
@@ -92,9 +118,10 @@ int main(int argc, const char * argv[])
     neurona = (int *)malloc(sizeof(int)*total_capas+1);
     
     //  Estructura de la neurona el indice del array neurona es el numero de capas y el valor es la cantidad de neuronas
-    neurona[0] = 58; // capa entrada
+//    neurona[0] = 58; // capa entrada
+    neurona[0] = 64; // capa entrada
     neurona[1] = 9;  // capa Intermedia
-    neurona[2] = 8;  // capa de salida
+    neurona[2] = 10;  // capa de salida
     neurona[3] = 0;  // capa auxiliar [siempre cero]
     
     total_input = neurona[0];
@@ -138,8 +165,9 @@ int main(int argc, const char * argv[])
 //  _____________
     
     //  Generamos la data en una estructura de listas enlazadas
-    obtener_data("cara.csv",total_input);
+    obtener_data("mnist.csv",total_input);
     //  Algoritmo MLP
+    cout<<"Train..."<<endl;
     mlp();
     
     
@@ -147,8 +175,9 @@ int main(int argc, const char * argv[])
 //  ______
     
     //  Generamos la data en una estructura de listas enlazadas
-    obtener_data("cara_test.csv",total_input);
+    obtener_data("mnist_test.csv",total_input);
     //  Corremos el Forward Propagation para el test
+    cout<<"Test..."<<endl;
     mlp_test();
     
     
@@ -168,7 +197,7 @@ int main(int argc, const char * argv[])
 //  MLP FORWARD Y BACKWARD PROPAGATION
 void mlp()
 {
-    total_epocas = 7000;
+    total_epocas = 1000;
     _datos *data;
     
     start = clock();
@@ -196,7 +225,7 @@ void mlp()
             {
                 if (c == total_capas-2)
                 {
-                    generar_deltas(data->target-1, pos_ini[c+1], neurona[c+1]);
+                    generar_deltas(data->target, pos_ini[c+1], neurona[c+1]);
                 }
                 actualizar_pesos(pos_ini[c],pos_ini[c+1],neurona[c],neurona[c+1],c);
             }
@@ -220,6 +249,7 @@ void mlp_test()
     int contador = 0;
     int salidaFinal = 0;
     int contadorCasos = 0;
+    int clasificados = 0;
     
     while (data != NULL) {
         point_capa = capa;
@@ -238,28 +268,39 @@ void mlp_test()
         for (int i = 0; i < total_salidas; i++)
         {
             //  Redondeamos la salida a 0 o 1
+//            salidaFinal = (point_capa[pos_resultado+i]);
             salidaFinal = (int)(point_capa[pos_resultado+i]+0.5);
-            if(res-1 == i && salidaFinal == 1)
+            if(res == i && salidaFinal == 1)
             {
                 contador++;
             }
+            
+            //  Conteo para Matriz de confusion
+            if (salidaFinal == 1) {
+                mConf[i][res] = mConf[i][res] + 1;
+                clasificados++;
+            }
+            
 //            cout<<salidaFinal<<" - ";
         }
         
-//        cout<<"- "<<res<<endl;
+//        cout<<"- "<<res-1<<endl;
         data = data->sig;
     }
     
-    detalles_test(contadorCasos, contador);
+    detalles_test(contadorCasos, contador, clasificados);
+    matriz_confusion();
 }
 
 
 //  INICIALIZAMOS LAS ENTRADAS PARA LA PRIMERA CAPA DE CADA CASO DE ENTRENAMIENTO
 void copiar_input(_datos *origen, int cantidad)
 {
+    float aux;
     point_capa[0] = 1;
     for (int i=1; i<cantidad+1; i++) {
-        point_capa[i] = origen->data[i-1];
+        aux = origen->data[i-1];
+        point_capa[i] = aux;
     }
 }
 
@@ -369,7 +410,7 @@ void obtener_data(string archivo,int total_input){
             b = (int)value.find(';',a+1);
             c = b;
             numero = value.substr(a+1,b-a-1);
-            d_array[i] = stof(numero);
+            d_array[i] = stof(numero)/255;
         }
         
         //  almacenamos los datos en la lista y enlazamos
@@ -392,17 +433,39 @@ void obtener_data(string archivo,int total_input){
 
 
 //  RESULTADOS DEL TEST Y PRESICION
-void detalles_test(int contadorCasos, int contador)
+void detalles_test(int contadorCasos, int contador, int clasificados)
 {
     int acurracy = contador * 100 / contadorCasos;
-    cout<<endl<<endl<<"Tiempo de Entrenamiento: "<< duration <<endl;
+    int noClasificados = contadorCasos - clasificados;
+    cout<<endl<<"--------------------------------"<<endl;
+    cout<<"Tiempo de Entrenamiento: "<< duration <<endl;
     cout<<"Epocas: "<<total_epocas<<endl;
     cout<<"Learn Rate: "<<learn_rate<<endl;
-    cout<<"-------------------------------"<<endl;
+    cout<<"--------------------------------"<<endl;
     cout<<"Total de Casos: "<<contadorCasos<<endl;
     cout<<"Aciertos: "<<contador<<endl;
-    cout<<"Desaciertos: "<<contadorCasos - contador<<endl;
+    cout<<"Sin Clasificar: "<<noClasificados<<endl;
+    cout<<"Desaciertos: "<<contadorCasos - contador - noClasificados<<endl;
     cout<<"Accuracy: "<<acurracy<<"%"<<endl;
+}
+
+
+//  MATRIZ DE CONFUSION
+void matriz_confusion()
+{
+    cout<<endl;
+    cout<<"MATRIZ DE CONFUSION"<<endl<<endl;
+    for (int i = 0; i < neurona[2]; i++)
+    {
+        int sum = 0;
+        cout<<"     "<<i<<" | ";
+        for (int j = 0; j < neurona[2]; j++) {
+            cout<<mConf[i][j]<<"  ";
+            sum = sum + mConf[i][j];
+        }
+        cout<<" : "<<sum<<endl;
+    }
+    cout<<endl;
 }
 
 
@@ -432,8 +495,6 @@ void imprimir_array()
         cout<<point_capa[i]<<"|";
     }
 }
-
-
 
 
 
