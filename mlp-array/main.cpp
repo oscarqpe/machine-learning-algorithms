@@ -50,7 +50,8 @@ double f_signoid(double numero);
 void multiplicacion_punto(int ,int ,int , int );
 void generar_deltas(int pos_target,int pos, int capaAux);
 void actualizar_pesos(int posInput, int posDelta, int cant_input, int cant_deltas, int numeroCapa);
-void detalles_test(int contadorCasos, int contador);
+void detalles_test(int contadorCasos, int contador, int clasificados);
+void matriz_confusion();
 
 
 //  VARIABLES GLOBALES
@@ -91,7 +92,16 @@ double target[10][10] = {{0.99, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01,0.01,0.
     {0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01,0.01,0.99}};
 //double target[2][2] ={{0.99,0.01},{0.01,0.99}};
 //double target[3][3] ={{0.99,0.01,0.01},{0.01,0.99,0.01},{0.01,0.01,0.99}};
-
+double mConf[10][10] = {{0,0,0,0,0,0,0,0,0,0},
+                        {0,0,0,0,0,0,0,0,0,0},
+                        {0,0,0,0,0,0,0,0,0,0},
+                        {0,0,0,0,0,0,0,0,0,0},
+                        {0,0,0,0,0,0,0,0,0,0},
+                        {0,0,0,0,0,0,0,0,0,0},
+                        {0,0,0,0,0,0,0,0,0,0},
+                        {0,0,0,0,0,0,0,0,0,0},
+                        {0,0,0,0,0,0,0,0,0,0},
+                        {0,0,0,0,0,0,0,0,0,0}};
 
 //  VARIABLES PARA EL CLOCK
 
@@ -215,7 +225,7 @@ void mlp()
             {
                 if (c == total_capas-2)
                 {
-                    generar_deltas(data->target-1, pos_ini[c+1], neurona[c+1]);
+                    generar_deltas(data->target, pos_ini[c+1], neurona[c+1]);
                 }
                 actualizar_pesos(pos_ini[c],pos_ini[c+1],neurona[c],neurona[c+1],c);
             }
@@ -239,6 +249,7 @@ void mlp_test()
     int contador = 0;
     int salidaFinal = 0;
     int contadorCasos = 0;
+    int clasificados = 0;
     
     while (data != NULL) {
         point_capa = capa;
@@ -259,25 +270,33 @@ void mlp_test()
             //  Redondeamos la salida a 0 o 1
 //            salidaFinal = (point_capa[pos_resultado+i]);
             salidaFinal = (int)(point_capa[pos_resultado+i]+0.5);
-            if(res-1 == i && salidaFinal == 1)
+            if(res == i && salidaFinal == 1)
             {
                 contador++;
             }
-            cout<<salidaFinal<<" - ";
+            
+            //  Conteo para Matriz de confusion
+            if (salidaFinal == 1) {
+                mConf[i][res] = mConf[i][res] + 1;
+                clasificados++;
+            }
+            
+//            cout<<salidaFinal<<" - ";
         }
         
-        cout<<"- "<<res-1<<endl;
+//        cout<<"- "<<res-1<<endl;
         data = data->sig;
     }
     
-    detalles_test(contadorCasos, contador);
+    detalles_test(contadorCasos, contador, clasificados);
+    matriz_confusion();
 }
 
 
 //  INICIALIZAMOS LAS ENTRADAS PARA LA PRIMERA CAPA DE CADA CASO DE ENTRENAMIENTO
 void copiar_input(_datos *origen, int cantidad)
 {
-    double aux;
+    float aux;
     point_capa[0] = 1;
     for (int i=1; i<cantidad+1; i++) {
         aux = origen->data[i-1];
@@ -397,7 +416,7 @@ void obtener_data(string archivo,int total_input){
         //  almacenamos los datos en la lista y enlazamos
         a = (int)value.find(';');
         numero = value.substr(0,a);
-        nuevo->target = stoi(numero)+1;
+        nuevo->target = stoi(numero);
         nuevo->data = d_array;
         puntero_aux->sig = nuevo;
         nuevo->sig = NULL;
@@ -414,17 +433,39 @@ void obtener_data(string archivo,int total_input){
 
 
 //  RESULTADOS DEL TEST Y PRESICION
-void detalles_test(int contadorCasos, int contador)
+void detalles_test(int contadorCasos, int contador, int clasificados)
 {
     int acurracy = contador * 100 / contadorCasos;
-    cout<<endl<<endl<<"Tiempo de Entrenamiento: "<< duration <<endl;
+    int noClasificados = contadorCasos - clasificados;
+    cout<<endl<<"--------------------------------"<<endl;
+    cout<<"Tiempo de Entrenamiento: "<< duration <<endl;
     cout<<"Epocas: "<<total_epocas<<endl;
     cout<<"Learn Rate: "<<learn_rate<<endl;
-    cout<<"-------------------------------"<<endl;
+    cout<<"--------------------------------"<<endl;
     cout<<"Total de Casos: "<<contadorCasos<<endl;
     cout<<"Aciertos: "<<contador<<endl;
-    cout<<"Desaciertos: "<<contadorCasos - contador<<endl;
+    cout<<"Sin Clasificar: "<<noClasificados<<endl;
+    cout<<"Desaciertos: "<<contadorCasos - contador - noClasificados<<endl;
     cout<<"Accuracy: "<<acurracy<<"%"<<endl;
+}
+
+
+//  MATRIZ DE CONFUSION
+void matriz_confusion()
+{
+    cout<<endl;
+    cout<<"MATRIZ DE CONFUSION"<<endl<<endl;
+    for (int i = 0; i < neurona[2]; i++)
+    {
+        int sum = 0;
+        cout<<"     "<<i<<" | ";
+        for (int j = 0; j < neurona[2]; j++) {
+            cout<<mConf[i][j]<<"  ";
+            sum = sum + mConf[i][j];
+        }
+        cout<<" : "<<sum<<endl;
+    }
+    cout<<endl;
 }
 
 

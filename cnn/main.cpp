@@ -45,8 +45,9 @@ double f_signoid(double numero);
 void back_pool(int * imagen, int * filtro, int *pool ,int pos_img , int pos_convol , int pos_pool, int pos_delta);
 void actualizar_filtros(int * imagen, int * filtro, int *pool ,int pos_img , int pos_convol , int pos_pool);
 void multiplicacion_punto(int pos_input,int pos_peso,int cant_input, int cant_nueronas);
-void detalles_test(int contadorCasos, int contador);
+void detalles_test(int contadorCasos, int contador, int clasificados);
 void liberar_memoria();
+void matriz_confusion();
 
 // VARIABLES
 _datos *point_data;
@@ -70,15 +71,26 @@ int total_array_mlp;
 
 int total_epocas;
 double target[10][10] = {{0.99, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01,0.01,0.01},
-    {0.01, 0.99, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01,0.01,0.01},
-    {0.01, 0.01, 0.99, 0.01, 0.01, 0.01, 0.01, 0.01,0.01,0.01},
-    {0.01, 0.01, 0.01, 0.99, 0.01, 0.01, 0.01, 0.01,0.01,0.01},
-    {0.01, 0.01, 0.01, 0.01, 0.99, 0.01, 0.01, 0.01,0.01,0.01},
-    {0.01, 0.01, 0.01, 0.01, 0.01, 0.99, 0.01, 0.01,0.01,0.01},
-    {0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.99, 0.01,0.01,0.01},
-    {0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.99,0.01,0.01},
-    {0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01,0.99,0.01},
-    {0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01,0.01,0.99}};
+                        {0.01, 0.99, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01,0.01,0.01},
+                        {0.01, 0.01, 0.99, 0.01, 0.01, 0.01, 0.01, 0.01,0.01,0.01},
+                        {0.01, 0.01, 0.01, 0.99, 0.01, 0.01, 0.01, 0.01,0.01,0.01},
+                        {0.01, 0.01, 0.01, 0.01, 0.99, 0.01, 0.01, 0.01,0.01,0.01},
+                        {0.01, 0.01, 0.01, 0.01, 0.01, 0.99, 0.01, 0.01,0.01,0.01},
+                        {0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.99, 0.01,0.01,0.01},
+                        {0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.99,0.01,0.01},
+                        {0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01,0.99,0.01},
+                        {0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01,0.01,0.99}};
+
+double mConf[10][10] = {{0,0,0,0,0,0,0,0,0,0},
+                        {0,0,0,0,0,0,0,0,0,0},
+                        {0,0,0,0,0,0,0,0,0,0},
+                        {0,0,0,0,0,0,0,0,0,0},
+                        {0,0,0,0,0,0,0,0,0,0},
+                        {0,0,0,0,0,0,0,0,0,0},
+                        {0,0,0,0,0,0,0,0,0,0},
+                        {0,0,0,0,0,0,0,0,0,0},
+                        {0,0,0,0,0,0,0,0,0,0},
+                        {0,0,0,0,0,0,0,0,0,0}};
 
 //  VARIABLES PARA EL CLOCK
 
@@ -185,11 +197,11 @@ int main(int argc, const char * argv[]) {
             sumatorias_error[i][j] = 0;
         }
     }
+
     
+//  ENTRENAMIENTO
     
-    
-    cout<<"ENTRENAMIENTO"<<endl<<endl;
-    
+    cout<<"Train..."<<endl;
     _datos *data;
     obtener_data("mnist.csv", total_imagen,network[0], 255);
     point_capa_cnn = capa_cnn;
@@ -204,7 +216,8 @@ int main(int argc, const char * argv[]) {
         //  Recorremos la data que esta almacenada en una lista enlazada
 
         data = point_data;
-        cout<<"Epoca "<<epoca<<endl;
+//        cout<<"Epoca "<<epoca<<endl;
+        //for (int i = 0; i < 550; i++)
         while (data != NULL)
         {
 
@@ -235,8 +248,10 @@ int main(int argc, const char * argv[]) {
     duration = ( std::clock() - start ) / (double) CLOCKS_PER_SEC;
     
     
+ 
+// TESTING
     
-    cout<<"TEST"<<endl;
+    cout<<"Test..."<<endl;
     
     obtener_data("mnist_test.csv",total_imagen,network[0], 255);
     point_capa_cnn = capa_cnn;
@@ -250,6 +265,7 @@ int main(int argc, const char * argv[]) {
     int contador = 0;
     int salidaFinal = 0;
     int contadorCasos = 0;
+    int clasificados = 0;
     
 
     while (data != NULL)
@@ -266,16 +282,22 @@ int main(int argc, const char * argv[]) {
         for (int i = 0; i < total_salidas; i++)
         {
             //  Redondeamos la salida a 0 o 1
-//            salidaFinal = (point_capa_mlp[pos_resultado+i]);
             salidaFinal = (int)(point_capa_mlp[pos_resultado+i]+0.5);
             if(res == i && salidaFinal == 1)
             {
                 contador++;
             }
-            cout<<salidaFinal<<" - ";
+            
+            //  Conteo para Matriz de confusion
+            if (salidaFinal == 1) {
+                mConf[i][res] = mConf[i][res] + 1;
+                clasificados++;
+            }
+            
+//            cout<<salidaFinal<<" - ";
         }
         
-        cout<<"- "<<res<<endl;
+//        cout<<"- "<<res<<endl;
         
         
         //  Inicializamos la seccion de la comnvolucion para la siguiente iteracion
@@ -290,13 +312,12 @@ int main(int argc, const char * argv[]) {
         data = data->sig;
     }
     
-    detalles_test(contadorCasos, contador);
-    
+    detalles_test(contadorCasos, contador, clasificados);
+    matriz_confusion();
     
     
     //  LIBERAMOS MEMORIA
     //  _________________
-    
     
     liberar_memoria();
     point_data = NULL;
@@ -875,17 +896,39 @@ void obtener_data(string archivo,int total_input, int * dim_imagen, double valor
 
 
 //  RESULTADOS DEL TEST Y PRESICION
-void detalles_test(int contadorCasos, int contador)
+void detalles_test(int contadorCasos, int contador, int clasificados)
 {
     int acurracy = contador * 100 / contadorCasos;
-    cout<<endl<<endl<<"Tiempo de Entrenamiento: "<< duration <<endl;
+    int noClasificados = contadorCasos - clasificados;
+    cout<<endl<<"--------------------------------"<<endl;
+    cout<<"Tiempo de Entrenamiento: "<< duration <<endl;
     cout<<"Epocas: "<<total_epocas<<endl;
     cout<<"Learn Rate: "<<learn_rate<<endl;
-    cout<<"-------------------------------"<<endl;
+    cout<<"--------------------------------"<<endl;
     cout<<"Total de Casos: "<<contadorCasos<<endl;
     cout<<"Aciertos: "<<contador<<endl;
-    cout<<"Desaciertos: "<<contadorCasos - contador<<endl;
+    cout<<"Sin Clasificar: "<<noClasificados<<endl;
+    cout<<"Desaciertos: "<<contadorCasos - contador - noClasificados<<endl;
     cout<<"Accuracy: "<<acurracy<<"%"<<endl;
+}
+
+
+//  MATRIZ DE CONFUSION
+void matriz_confusion()
+{
+    cout<<endl;
+    cout<<"MATRIZ DE CONFUSION"<<endl<<endl;
+    for (int i = 0; i < neurona[2]; i++)
+    {
+        int sum = 0;
+        cout<<"     "<<i<<" | ";
+        for (int j = 0; j < neurona[2]; j++) {
+            cout<<mConf[i][j]<<"  ";
+            sum = sum + mConf[i][j];
+        }
+        cout<<" : "<<sum<<endl;
+    }
+    cout<<endl;
 }
 
 
