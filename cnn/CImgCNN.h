@@ -27,7 +27,7 @@ CImg<float> dibujar(double* data,int numMax,int x,int y,bool guardar,string nomb
         image.draw_point(x, y, &dato);
         j++;
     }
-//    image.display();
+    image.display();
     if (guardar == true) {
         string fileName = "Guardadas/" + nombre + ".bmp";
         image.save_bmp(fileName.c_str());
