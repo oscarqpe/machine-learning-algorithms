@@ -14,6 +14,7 @@
 #include <math.h>
 #include <ctime>
 #include <vector>
+//#include "CImgCNN.h"
 
 using namespace std;
 
@@ -45,13 +46,14 @@ double f_signoid(double numero);
 void back_pool(int * imagen, int * filtro, int *pool ,int pos_img , int pos_convol , int pos_pool, int pos_delta);
 void actualizar_filtros(int * imagen, int * filtro, int *pool ,int pos_img , int pos_convol , int pos_pool);
 void multiplicacion_punto(int pos_input,int pos_peso,int cant_input, int cant_nueronas);
-void detalles_test(int contadorCasos, int contador, int clasificados);
+void detalles_test(int contador_casos_entrenamiento,int contadorCasos, int contador, int clasificados);
 void liberar_memoria();
 void matriz_confusion();
+void dibujar_matriz(int posInicial, int posFinal, int alto, int ancho,  int capas, int multiplicador);
 
 // VARIABLES
 _datos *point_data;
-int ** network;
+//int ** network;
 int total_capas_cnn;
 int total_array_cnn;
 int *pos_cnn;
@@ -59,7 +61,7 @@ double *point_capa_cnn;
 double *capa_cnn;
 
 double learn_rate;
-int *neurona;
+//int *neurona;
 double *capa_mlp;
 double *point_capa_mlp;
 double **sumatorias_error;
@@ -68,6 +70,7 @@ int total_salidas;
 int total_capas_mlp;
 int *pos_mlp;
 int total_array_mlp;
+int total_datos = 0;
 
 int total_epocas;
 double target[10][10] = {{0.99, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01,0.01,0.01},
@@ -92,8 +95,16 @@ double mConf[10][10] = {{0,0,0,0,0,0,0,0,0,0},
                         {0,0,0,0,0,0,0,0,0,0},
                         {0,0,0,0,0,0,0,0,0,0}};
 
-//  VARIABLES PARA EL CLOCK
+// Arquitectura de CNN
+int network[3][5] = {{8,8,1,1,0}, // Dim Imagen [0,1,2] - Padding [3]
+                    {3,3,1,1,7},  // Dim filtro [0,1,2] - Salto [3] - Filtros [4]
+                    {2,2,1,2,7}}; // Dim pool [0,1,2] - Salto [3] - Filtros o profundida [4]
 
+// Arquitectura de MLP
+int neurona[4] = {0,15,10,0};
+
+
+//  VARIABLES PARA EL CLOCK
 clock_t start;
 double duration;
 
@@ -104,14 +115,13 @@ int main(int argc, const char * argv[]) {
     
 //  CONFIGURACION CNN
     
-    network = (int **)malloc(sizeof(int)*3);
-    network[0] = (int *)malloc(sizeof(int)*4);
-    network[1] = (int *)malloc(sizeof(int)*5);
-    network[2] = (int *)malloc(sizeof(int)*5);
-    
-    network[0] = (int[4]){8,8,1,1};  // Dim Imagen [0,1,2] - Padding [3]
-    network[1] = (int[5]){3,3,1,1,7};// Dim filtro [0,1,2] - Salto [3] - Filtros [4]
-    network[2] = (int[5]){2,2,1,2,network[1][4]};// Dim pool [0,1,2] - Salto [3] - Filtros o profundida [4]
+//    network = (int **)malloc(sizeof(int)*3);
+//    network[0] = (int *)malloc(sizeof(int)*4);
+//    network[1] = (int *)malloc(sizeof(int)*5);
+//    network[2] = (int *)malloc(sizeof(int)*5);
+//    network[0] = (int[4]){8,8,1,1};  // Dim Imagen [0,1,2] - Padding [3]
+//    network[1] = (int[5]){3,3,1,1,7};// Dim filtro [0,1,2] - Salto [3] - Filtros [4]
+//    network[2] = (int[5]){2,2,1,2,network[1][4]};// Dim pool [0,1,2] - Salto [3] - Filtros o profundida [4]
 
     total_capas_cnn = 3;
     pos_cnn = (int *)malloc(sizeof(int)*total_capas_cnn);
@@ -156,14 +166,14 @@ int main(int argc, const char * argv[]) {
 //  CONFIGURACION MLP
     
     total_capas_mlp = 3;
-    neurona = (int *)malloc(sizeof(int)*total_capas_mlp+1);
+//    neurona = (int *)malloc(sizeof(int)*total_capas_mlp+1);
     
     //  Estructura de la neurona el indice del array neurona es el numero de capas y el valor es la cantidad de neuronas
     //    neurona[0] = 58; // capa entrada
     neurona[0] = total_array_cnn - pos_cnn[2]; // capa entrada
-    neurona[1] = 15;  // capa Intermedia
-    neurona[2] = 10;  // capa de salida
-    neurona[3] = 0;  // capa auxiliar [siempre cero]
+//    neurona[1] = 15;  // capa Intermedia
+//    neurona[2] = 10;  // capa de salida
+//    neurona[3] = 0;  // capa auxiliar [siempre cero]
     
     total_input = neurona[0];
     total_salidas = neurona[total_capas_mlp-1];
@@ -199,15 +209,19 @@ int main(int argc, const char * argv[]) {
     }
 
     
-//  ENTRENAMIENTO
+//  ENTRENAMIENTO : Optimo 7 filtro y una neurona de [X,15,10] learning rate 0.8 => 94%
     
     cout<<"Train..."<<endl;
     _datos *data;
+    total_datos = 0;
     obtener_data("mnist.csv", total_imagen,network[0], 255);
+    int total_datos_entrenamiento = total_datos;
     point_capa_cnn = capa_cnn;
     point_capa_mlp = capa_mlp;
-    total_epocas = 600;
     
+    
+    
+    total_epocas = 200;
     start = clock();
     
     //  Recorremos las epocas
@@ -216,11 +230,10 @@ int main(int argc, const char * argv[]) {
         //  Recorremos la data que esta almacenada en una lista enlazada
 
         data = point_data;
-//        cout<<"Epoca "<<epoca<<endl;
-        //for (int i = 0; i < 550; i++)
+        cout<<"Epoca "<<epoca<<endl;
+//        for (int i = 0; i < 2; i++)
         while (data != NULL)
         {
-
             copiar_input(data,total_imagen);
             convolucion_pool(network[0], network[1], network[2], pos_cnn[0],pos_cnn[1], pos_cnn[2], 1);
             fully_conected(pos_cnn[2], total_input);
@@ -252,8 +265,9 @@ int main(int argc, const char * argv[]) {
 // TESTING
     
     cout<<"Test..."<<endl;
-    
+    total_datos = 0;
     obtener_data("mnist_test.csv",total_imagen,network[0], 255);
+    int total_datos_test = total_datos;
     point_capa_cnn = capa_cnn;
     point_capa_mlp = capa_mlp;
     data = point_data;
@@ -270,9 +284,17 @@ int main(int argc, const char * argv[]) {
 
     while (data != NULL)
     {
+//        cout<<"Test "<<contadorCasos<<endl;
         res = data->target;
         copiar_input(data,total_imagen);
         convolucion_pool(network[0], network[1], network[2], pos_cnn[0],pos_cnn[1], pos_cnn[2], 1);
+        
+        
+//          Dibujar
+//        dibujar_matriz(pos_cnn[0], total_imagen, 10, 10, 1 ,16);
+//        dibujar_matriz(pos_cnn[1], pos_cnn[2], 8, 8, network[1][4] , 16);
+//        dibujar_matriz(pos_cnn[2], pos_cnn[3], 4, 4, network[1][4] , 16);
+        
         fully_conected(pos_cnn[2], total_input);
         mlp_fordward();
         
@@ -295,9 +317,10 @@ int main(int argc, const char * argv[]) {
             }
             
 //            cout<<salidaFinal<<" - ";
+            cout<<point_capa_mlp[pos_resultado+i]<<" - ";
         }
         
-//        cout<<"- "<<res<<endl;
+        cout<<"- "<<res<<endl;
         
         
         //  Inicializamos la seccion de la comnvolucion para la siguiente iteracion
@@ -312,7 +335,7 @@ int main(int argc, const char * argv[]) {
         data = data->sig;
     }
     
-    detalles_test(contadorCasos, contador, clasificados);
+    detalles_test(total_datos_entrenamiento,total_datos_test, contador, clasificados);
     matriz_confusion();
     
     
@@ -328,6 +351,26 @@ int main(int argc, const char * argv[]) {
     free(point_capa_cnn);
 
     return 0;
+}
+
+
+void dibujar_matriz(int posInicial, int posFinal, int alto, int ancho, int capas, int multiplicador)
+{
+//    int cantidad = posFinal - posInicial;
+    
+    int cantidad_imagen = alto * ancho;
+    
+    double *arrayImag = (double *)malloc(sizeof(double) * cantidad_imagen);
+    for (int k = 0; k < capas; k++)
+    {
+        for (int i = 0; i < cantidad_imagen; i++)
+        {
+            arrayImag[i] = capa_cnn[posInicial + i + (k * cantidad_imagen)];
+        }
+        
+//        dibujar(arrayImag, multiplicador, alto, ancho , true, "Figura");
+    }
+    
 }
 
 
@@ -824,6 +867,8 @@ void obtener_data(string archivo,int total_input, int * dim_imagen, double valor
     string value;
     while (file.good())
     {
+        total_datos = total_datos + 1;
+
         getline ( file, value, '\n' );
         
         //  declaramos un array
@@ -884,7 +929,6 @@ void obtener_data(string archivo,int total_input, int * dim_imagen, double valor
         puntero_aux->sig = nuevo;
         nuevo->sig = NULL;
         puntero_aux = nuevo;
-        
         nuevo = (struct _datos *) malloc (sizeof(struct _datos));
     }
     
@@ -896,16 +940,17 @@ void obtener_data(string archivo,int total_input, int * dim_imagen, double valor
 
 
 //  RESULTADOS DEL TEST Y PRESICION
-void detalles_test(int contadorCasos, int contador, int clasificados)
+void detalles_test(int contador_casos_entrenamiento,int contadorCasos, int contador, int clasificados)
 {
     int acurracy = contador * 100 / contadorCasos;
     int noClasificados = contadorCasos - clasificados;
     cout<<endl<<"--------------------------------"<<endl;
     cout<<"Tiempo de Entrenamiento: "<< duration <<endl;
     cout<<"Epocas: "<<total_epocas<<endl;
+    cout<<"Casos Entrenamiento: "<<contador_casos_entrenamiento<<endl;
     cout<<"Learn Rate: "<<learn_rate<<endl;
     cout<<"--------------------------------"<<endl;
-    cout<<"Total de Casos: "<<contadorCasos<<endl;
+    cout<<"Casos de Test: "<<contadorCasos<<endl;
     cout<<"Aciertos: "<<contador<<endl;
     cout<<"Sin Clasificar: "<<noClasificados<<endl;
     cout<<"Desaciertos: "<<contadorCasos - contador - noClasificados<<endl;
