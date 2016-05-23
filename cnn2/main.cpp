@@ -13,7 +13,6 @@
 #include <string>
 #include <math.h>
 #include <ctime>
-//#include <vector>
 #include <random>
 //#include "CImgCNN.h"
 
@@ -21,7 +20,6 @@
 using namespace std;
 
 //  ESTRUCTURA PARA DATA DE ENTRENAMIENTO Y TEST
-
 struct _datos
 {
     double * data = NULL;
@@ -66,7 +64,6 @@ void imprimir_filtro_mlp(int pos1, int pos2 , int * neurona);
 void liberar_memoria();
 void detalles_test(int contador_casos_entrenamiento,int contadorCasos, int contador, int clasificados);
 void matriz_confusion();
-
 
 
 // VARIABLES
@@ -126,7 +123,7 @@ double learn_rate_cnn = 0.1; // 0.1
 double learn_rate_mlp = 0.1; // 0.01
 
 //  Epocas de entrenamiento
-int total_epocas = 2;
+int total_epocas = 1;
 
 //  Dataset
 char *rutaDataTrain = "mnist_train_28x28.csv";
