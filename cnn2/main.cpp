@@ -13,7 +13,7 @@
 #include <string>
 #include <math.h>
 #include <ctime>
-#include <vector>
+//#include <vector>
 #include <random>
 //#include "CImgCNN.h"
 
@@ -24,7 +24,7 @@ using namespace std;
 
 struct _datos
 {
-    long double * data = NULL;
+    double * data = NULL;
     int target;
     struct _datos *sig = NULL;
 };
@@ -43,13 +43,15 @@ void actualizar_filtros(int * imagen, int * filtro, int *pool ,int pos_img , int
 void generar_deltas(int pos_target,int pos, int capaAux);
 void multiplicacion_punto(int pos_input,int pos_peso,int cant_input, int cant_nueronas);
 void actualizar_pesos(int posInput, int posDelta, int cant_input, int cant_deltas,int numeroCapa);
-long double f_signoid(long double numero);
+double f_signoid(double numero);
 
 //  Auxiliares
-void obtener_data(string archivo,int total_input, int * dim_imagen, long double valor_normalizador);
+void cargar_data_pesos(string archivo);
+void guardar_data_pesos(string ruta,int *imagen, int *filtro, int pos_imagen,int pos1, int pos2 , int * neurona);
+void obtener_data(string archivo,int total_input, int * dim_imagen, double valor_normalizador);
 void copiar_input(_datos *origen, int cantidad);
-void rand_distribucion_normal(long double *capa, int inicio, int num);
-void rand_cero_uno(long double *capa, int inicio, int num);
+void rand_distribucion_normal(double *capa, int inicio, int num);
+void rand_cero_uno(double *capa, int inicio, int num);
 void dibujar_imagen(int posInicial, int posFinal, int alto, int ancho,  int capas, int multiplicador);
 
 //  Para imprimir Data
@@ -76,19 +78,19 @@ int *pos_cnn; // posiciones iniciales de cada capa
 int *pos_mlp; // posiciones iniciales de cada capa
 int total_array_cnn; // # tamaño total del arreglo
 int total_array_mlp; // # tamaño total del arreglo
-long double *capa_cnn;
-long double *capa_mlp;
-long double *point_capa_cnn; // Puntero auxiliar al array capa_cnn
-long double *point_capa_mlp; // Puntero auxiliar al array capa_mlp
-long double **sumatorias_error; // error acumulado para cada neurona
+double *capa_cnn;
+double *capa_mlp;
+double *point_capa_cnn; // Puntero auxiliar al array capa_cnn
+double *point_capa_mlp; // Puntero auxiliar al array capa_mlp
+double **sumatorias_error; // error acumulado para cada neurona
 int total_datos;
 
 //  Clock
 clock_t start;
-long double duration;
+double duration;
 
 //  Codificacion de Targets
-long double target[10][10] = {{0.99, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01,0.01,0.01},
+double target[10][10] = {{0.99, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01,0.01,0.01},
                             {0.01, 0.99, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01,0.01,0.01},
                             {0.01, 0.01, 0.99, 0.01, 0.01, 0.01, 0.01, 0.01,0.01,0.01},
                             {0.01, 0.01, 0.01, 0.99, 0.01, 0.01, 0.01, 0.01,0.01,0.01},
@@ -100,47 +102,52 @@ long double target[10][10] = {{0.99, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01,0.
                             {0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01,0.01,0.99}};
 
 //  Matriz de confusion
-long double mConf[10][10] = {{0,0,0,0,0,0,0,0,0,0},
-                            {0,0,0,0,0,0,0,0,0,0},
-                            {0,0,0,0,0,0,0,0,0,0},
-                            {0,0,0,0,0,0,0,0,0,0},
-                            {0,0,0,0,0,0,0,0,0,0},
-                            {0,0,0,0,0,0,0,0,0,0},
-                            {0,0,0,0,0,0,0,0,0,0},
-                            {0,0,0,0,0,0,0,0,0,0},
-                            {0,0,0,0,0,0,0,0,0,0},
-                            {0,0,0,0,0,0,0,0,0,0}};
+double mConf[10][10] = {{0,0,0,0,0,0,0,0,0,0},
+                        {0,0,0,0,0,0,0,0,0,0},
+                        {0,0,0,0,0,0,0,0,0,0},
+                        {0,0,0,0,0,0,0,0,0,0},
+                        {0,0,0,0,0,0,0,0,0,0},
+                        {0,0,0,0,0,0,0,0,0,0},
+                        {0,0,0,0,0,0,0,0,0,0},
+                        {0,0,0,0,0,0,0,0,0,0},
+                        {0,0,0,0,0,0,0,0,0,0},
+                        {0,0,0,0,0,0,0,0,0,0}};
 
 //  Arquitectura de CNN
-int network[3][5] = {{8,8,1,1,0}, // Dim Imagen [0,1,2] - Padding [3]
-                    {3,3,1,1,24},  // Dim filtro [0,1,2] - Salto [3] - Filtros [4]
-                    {2,2,1,2,24}}; // Dim pool [0,1,2] - Salto [3] - Filtros o profundida [4]
+int network[3][5] = {{28,28,1,0,0}, // Dim Imagen [0,1,2] - Padding [3]
+                    {5,5,1,1,20},  // Dim filtro [0,1,2] - Salto [3] - Filtros [4]
+                    {2,2,1,2,20}}; // Dim pool [0,1,2] - Salto [3] - Filtros o profundida [4]
 
 //  Arquitectura de MLP
-int neurona[4] = {0,70,10,0};
+int neurona[4] = {0,100,10,0};
 
 //  Tasas de aprendizaje
-long double learn_rate_cnn = 0.01; // 0.1
-long double learn_rate_mlp = 0.4; // 0.01
-
-//  Dataset
-//char *rutaDataTrain = "mnist_train_28x28.csv";
-//char *rutaDataTest = "mnist_test_28x28.csv";
-char *rutaDataTrain = "mnist.csv";
-char *rutaDataTest = "mnist_test.csv";
+double learn_rate_cnn = 0.1; // 0.1
+double learn_rate_mlp = 0.1; // 0.01
 
 //  Epocas de entrenamiento
-int total_epocas = 100;
+int total_epocas = 2;
+
+//  Dataset
+char *rutaDataTrain = "mnist_train_28x28.csv";
+char *rutaDataTest = "mnist_test_28x28.csv";
+//char *rutaDataTrain = "mnist.csv";
+//char *rutaDataTest = "mnist_test.csv";
+
+//  Save Load data de pesos
+int load_data = false; // variable para cargar un archivo csv
+int save_data = false; // variable para guardar los resultados de un entrenamiento
+char *rutaPesoLoad = "pesosSave4-4.csv"; // archivo para cargar data de pesos
+char *rutaPesoSave = "pesosSave4-5.csv"; // archivo destino para guardar los pesos
 
 //  Centinela para dibujar o no
 int dibujar = false;
-int escala_data = 17;
-int escala_imagen = 17;
+int escala_data = 1;
+int escala_imagen = 1;
 int m_dibujo[3][2] = {{10,10},{8,8},{4,4}};
 
 int main(int argc, const char * argv[])
 {
-    
     cout<<"Start..."<<endl;
 //  ESTRUCTURA DE ARRAY CNN -------------------------------------------------------------------------------------------------
     srand(time(0));
@@ -172,7 +179,7 @@ int main(int argc, const char * argv[])
     total_array_cnn = total;
     
     //  Inicializamos el array principal de elementos con valores en cero
-    capa_cnn = (long double *)malloc(sizeof(long double) * total_array_cnn);
+    capa_cnn = (double *)malloc(sizeof(double) * total_array_cnn);
     point_capa_cnn = capa_cnn;
     for (int i = 0; i< total_array_cnn; i++) {
         capa_cnn[i] = 0;
@@ -217,7 +224,7 @@ int main(int argc, const char * argv[])
     total_array_mlp = total;
     
     //  Inicializamos el array con 0,Generamos los pesos aleatorio por una distribucion uniforme N(u,o2) = N(0,2/n) - n es la cantidad de pesos generados
-    capa_mlp = (long double *)malloc(sizeof(long double)*total_array_mlp);
+    capa_mlp = (double *)malloc(sizeof(double)*total_array_mlp);
     point_capa_mlp = capa_mlp; // Puntero auxiliar a capa_mlp
     for (int i = 0; i < total_capas_mlp; i++) {
         
@@ -231,18 +238,26 @@ int main(int argc, const char * argv[])
     }
     
     //  Reservamos espacio en memoria para una matriz que almacene el error acumulado de una neurona
-    sumatorias_error = (long double **)malloc(sizeof(long double)*(total_capas_mlp-1));
+    sumatorias_error = (double **)malloc(sizeof(double)*(total_capas_mlp-1));
     for (int i = 0; i< total_capas_mlp-1; i++) {
-        sumatorias_error[i] = (long double *)malloc(sizeof(long double)*(neurona[i]+1));
+        sumatorias_error[i] = (double *)malloc(sizeof(double)*(neurona[i]+1));
         for (int j=0; j < neurona[i]+1; j++) {
             sumatorias_error[i][j] = 0;
         }
     }
     
+    
+//  ------------------------------------------------------------------------------------------------------------------------
+    //  Cargamos los pesos guardados
+    if (load_data == true)
+    {
+        cargar_data_pesos(rutaPesoLoad);
+    }
+    
 //  ------------------------------------------------------------------------------------------------------------------------
 //  ENTRENAMIENTO DE LA RED ------------------------------------------------------------------------------------------------
     
-    cout<<"Train..."<<endl;
+    cout<<"Load Dataset..."<<endl;
     
     _datos *data; // puntero auxiliar a los datos
     
@@ -253,7 +268,7 @@ int main(int argc, const char * argv[])
     
     //  Iniciamos a correr el reloj
     start = clock();
-    
+    cout<<"Train..."<<endl;
     //  Recorremos las epocas de entrenamiento
     for (int epoca = 0; epoca< total_epocas; epoca++)
     {
@@ -280,7 +295,6 @@ int main(int argc, const char * argv[])
             // Actualizacion de filtros
             actualizar_filtros(network[0], network[1], network[2], pos_cnn[0],pos_cnn[1], pos_cnn[2]);
             
-            
             // Inicializamos la seccion de la comnvolucion para la siguiente iteracion
             for (int i = pos_cnn[1]; i < pos_cnn[2]; i++)
                 capa_cnn[i] = 0;
@@ -295,13 +309,13 @@ int main(int argc, const char * argv[])
     }
     
     // Detenemos el reloj que mide el tiempo de entrenamiento
-    duration = ( std::clock() - start ) / (long double) CLOCKS_PER_SEC;
+    duration = ( std::clock() - start ) / (double) CLOCKS_PER_SEC;
 
     
 //  ------------------------------------------------------------------------------------------------------------------------
 //  TEST DE LA RED ---------------------------------------------------------------------------------------------------------
     
-    cout<<"Test..."<<endl;
+    cout<<"Load Dataset..."<<endl;
     
     //  Obtener la data de entrenamiento en una lista enlazada
     total_datos = 0;
@@ -319,7 +333,7 @@ int main(int argc, const char * argv[])
     int clasificados = 0;
     string salida;
     
-    
+    cout<<"Test..."<<endl;
     //for (int i = 0; i < 10000; i++)
     while (data != NULL)
     {
@@ -343,28 +357,54 @@ int main(int argc, const char * argv[])
 
         
         //  Conteo de aciertos
-        for (int i = 0; i < total_salidas; i++)
+//        int i = 0;
+//        int centinela = true;
+//        //for (int i = 0; i < total_salidas; i++)
+//        while ( i < total_salidas && centinela == true)
+//        {
+//            //  Redondeamos la salida a 0 o 1
+//            salidaFinal = (int)(point_capa_mlp[pos_resultado+i]+0.5);
+//            
+//            // Contador de aciertos
+//            if(res == i && salidaFinal == 1)
+//            {
+//                contador_aciertos++;
+//            }
+//            
+//            //  Conteo para Matriz de confusion
+//            if (salidaFinal == 1) {
+//                mConf[i][res] = mConf[i][res] + 1;
+//                clasificados++;
+//                centinela = false;
+//            }
+//            i++;
+//            //cout<<salidaFinal<<" - ";
+//            //cout<<point_capa_mlp[pos_resultado+i]<<" - ";
+//        }
+//        //cout<<"- "<<res<<endl;
+        
+        
+        double max_final = point_capa_mlp[pos_resultado];
+        int indice = 0;
+        for (int i = 1; i < total_salidas; i++)
         {
-            //  Redondeamos la salida a 0 o 1
-            salidaFinal = (int)(point_capa_mlp[pos_resultado+i]+0.5);
-            
-            // Contador de aciertos
-            if(res == i && salidaFinal == 1)
+            if(point_capa_mlp[pos_resultado+i] > max_final)
+            {
+                max_final = point_capa_mlp[pos_resultado+i];
+                indice = i;
+            }
+        }
+        
+//        if (max_final > 0.5)
+//        {
+            if(res == indice)
             {
                 contador_aciertos++;
             }
-            
-            //  Conteo para Matriz de confusion
-            if (salidaFinal == 1) {
-                mConf[i][res] = mConf[i][res] + 1;
-                clasificados++;
-            }
-            
-            //cout<<salidaFinal<<" - ";
-            //cout<<point_capa_mlp[pos_resultado+i]<<" - ";
-        }
-        //cout<<"- "<<res<<endl;
-        
+            mConf[indice][res] = mConf[indice][res] + 1;
+            clasificados++;
+//        }
+
         
         //  Inicializamos la seccion de la comnvolucion para la siguiente iteracion
         for (int i = pos_cnn[1]; i < pos_cnn[2]; i++)
@@ -383,6 +423,12 @@ int main(int argc, const char * argv[])
     
     detalles_test(total_datos_entrenamiento,total_datos_test, contador_aciertos, clasificados);
     matriz_confusion();
+
+    //  si deseamos almacenar los pesos generados
+    if (save_data == true)
+    {
+        guardar_data_pesos(rutaPesoSave,network[0], network[1], pos_cnn[0], pos_mlp[0], pos_mlp[1] , neurona);
+    }
     
 //  ------------------------------------------------------------------------------------------------------------------------
 //  LIBERAR MEMORIA ----------------------------------------------------------------------------------------------------
@@ -397,8 +443,6 @@ int main(int argc, const char * argv[])
     
     return 0;
 }
-
-
 
 
 //  ------------------------------------------------------------------------------------------------------------------------
@@ -441,7 +485,7 @@ void convolucion_pool(int * imagen, int * filtro, int *pool ,int pos_img , int p
                 //  Recorre el ancho de la matriz de convolucion - acumula el producto
                 for (int pj = 0; pj < ancho_convol; pj++)
                 {
-                    long double sumatoria = 0;
+                    double sumatoria = 0;
                     
                     //  Recorre el filtro y realiza la multiplicacion
                     for (int col = 0; col < ancho_filtro; col++)
@@ -449,8 +493,8 @@ void convolucion_pool(int * imagen, int * filtro, int *pool ,int pos_img , int p
                         
                         int xpos_filtro = pos_filtro + col + (row * ancho_filtro) + (fil*ancho_filtro * ancho_filtro);
                         int xpos_imagen = pos_imagen + col + (pj * saltos) + (row * ancho_imagen) + (pi * ancho_imagen);
-                        long double afil = capa_cnn[xpos_filtro];
-                        long double aimg = capa_cnn[xpos_imagen];
+                        double afil = capa_cnn[xpos_filtro];
+                        double aimg = capa_cnn[xpos_imagen];
                         sumatoria = sumatoria + afil * aimg;
                         
                     }
@@ -468,11 +512,11 @@ void convolucion_pool(int * imagen, int * filtro, int *pool ,int pos_img , int p
             
             for (int x=0; x < ancho_pool; x++)
             {
-                long double max = capa_cnn[pos_pool + x + (xp * ancho_pool) + (fil * ancho_pool * ancho_pool)];
+                double max = capa_cnn[pos_pool + x + (xp * ancho_pool) + (fil * ancho_pool * ancho_pool)];
                 
                 for (int y = 0; y < ancho_filtro_pool; y++)
                 {
-                    long double valor = capa_cnn[pos_convol + y + (x * ancho_filtro_pool)+(pi * ancho_convol)+(fil * ancho_convol * ancho_convol)];
+                    double valor = capa_cnn[pos_convol + y + (x * ancho_filtro_pool)+(pi * ancho_convol)+(fil * ancho_convol * ancho_convol)];
                     if (valor > max)
                     {
                         max = valor;
@@ -554,11 +598,11 @@ void back_pool(int * imagen, int * filtro, int *pool ,int pos_img , int pos_conv
             
             for (int x=0; x < ancho_pool; x++)
             {
-                long double max = capa_cnn[pos_pool + x + (xp * ancho_pool) + (fil * ancho_pool * ancho_pool)];
-                long double delta = capa_mlp[1 + pos_delta + x + (xp * ancho_pool) + (fil * ancho_pool * ancho_pool)];
+                double max = capa_cnn[pos_pool + x + (xp * ancho_pool) + (fil * ancho_pool * ancho_pool)];
+                double delta = capa_mlp[1 + pos_delta + x + (xp * ancho_pool) + (fil * ancho_pool * ancho_pool)];
                 for (int y = 0; y < ancho_filtro_pool; y++)
                 {
-                    long double valor = capa_cnn[pos_convol + y + (x * ancho_filtro_pool)+(pi * ancho_convol)+(fil * ancho_convol * ancho_convol)];
+                    double valor = capa_cnn[pos_convol + y + (x * ancho_filtro_pool)+(pi * ancho_convol)+(fil * ancho_convol * ancho_convol)];
                     if (valor == max)
                     {
                         capa_cnn[pos_convol + y + (x * ancho_filtro_pool)+(pi * ancho_convol)+(fil * ancho_convol * ancho_convol)] = delta;
@@ -608,15 +652,15 @@ void actualizar_filtros(int * imagen, int * filtro, int *pool ,int pos_img , int
                 for (int pj = 0; pj < ancho_convol; pj++)
                 {
                     int xpos_convol = pos_convol + pj + (pi * ancho_convol) + (fil * ancho_convol * ancho_convol);
-                    long double adelta = capa_cnn[xpos_convol];
+                    double adelta = capa_cnn[xpos_convol];
                     //  Recorre el filtro y realiza la multiplicacion
                     for (int col = 0; col < ancho_filtro; col++)
                     {
                         
                         int xpos_filtro = pos_filtro + col + (row * ancho_filtro) + (fil*ancho_filtro * ancho_filtro);
                         int xpos_imagen = pos_imagen + col + (pj * saltos) + (row * ancho_imagen) + (pi * ancho_imagen);
-                        long double afil = capa_cnn[xpos_filtro];
-                        long double aimg = capa_cnn[xpos_imagen];
+                        double afil = capa_cnn[xpos_filtro];
+                        double aimg = capa_cnn[xpos_imagen];
 
                         capa_cnn[xpos_filtro] = capa_cnn[xpos_filtro] - learn_rate_cnn * adelta * aimg;
                     }
@@ -635,8 +679,8 @@ void actualizar_filtros(int * imagen, int * filtro, int *pool ,int pos_img , int
 void generar_deltas(int pos_target,int pos, int capaAux)
 {
     for (int i = 1; i < capaAux+1; i++) {
-        long double out = point_capa_mlp[pos+i];
-        long double obj = target[pos_target][i-1];
+        double out = point_capa_mlp[pos+i];
+        double obj = target[pos_target][i-1];
         point_capa_mlp[pos+i] = ( out - obj) * out * (1 - out);
     }
 }
@@ -648,7 +692,7 @@ void generar_deltas(int pos_target,int pos, int capaAux)
 //  cant_neuronas -> cantidad de neuronas a procesar en la capa actual
 void multiplicacion_punto(int pos_input,int pos_peso,int cant_input, int cant_nueronas)
 {
-    long double sumatoria = 0;
+    double sumatoria = 0;
     int ini_matriz = cant_input + 1;
     point_capa_mlp[pos_peso] = 1;
     
@@ -666,7 +710,7 @@ void actualizar_pesos(int posInput, int posDelta, int cant_input, int cant_delta
 {
     // indicie para marcar el inicio de la seccion de pesos de la capa i
     int ini_matriz = posInput + cant_input + 1;
-    long double derivada;
+    double derivada;
     
     //  Recorremos los deltas de la capa que hallamos anteriormente - hay un delta por neurona
     for (int i=1; i < cant_deltas+1; i++)
@@ -687,7 +731,7 @@ void actualizar_pesos(int posInput, int posDelta, int cant_input, int cant_delta
     }
     
     //  Por generalizacion acumulamos el error del bias que se almacena en la posicion 0, pero esto no es necesario ya que el bias es una neurona aislada, la primera posicion la inicializamos a 0 para las proximas iteraciones
-    long double input_aux = 0;
+    double input_aux = 0;
     sumatorias_error[numeroCapa][0] = 0;
     
     if (numeroCapa > 0){
@@ -711,7 +755,7 @@ void actualizar_pesos(int posInput, int posDelta, int cant_input, int cant_delta
 }
 
 //  FUNCION DE ACTIVACION
-long double f_signoid(long double numero)
+double f_signoid(double numero)
 {
     return 1 / (1 + pow(exp(1), -1 * numero));
 }
@@ -721,7 +765,7 @@ long double f_signoid(long double numero)
 // AUXILIARES ----------------------------------------------------------------------------------------------------------------
 
 //  GENERAMOS UNA ESTRUCTURA CON LA DATA DE ENTRENAMIENTO O TEST
-void obtener_data(string archivo,int total_input, int * dim_imagen, long double valor_normalizador)
+void obtener_data(string archivo,int total_input, int * dim_imagen, double valor_normalizador)
 {
     string numero;
     int a,b;
@@ -746,8 +790,8 @@ void obtener_data(string archivo,int total_input, int * dim_imagen, long double 
         getline ( file, value, '\n' );
         
         //  declaramos un array
-        long double *d_array;
-        d_array = (long double *)malloc(sizeof(long double)*total_input);
+        double *d_array;
+        d_array = (double *)malloc(sizeof(double)*total_input);
         
         if (pad > 0)
         {
@@ -819,7 +863,7 @@ void obtener_data(string archivo,int total_input, int * dim_imagen, long double 
 //  INICIALIZAMOS LAS ENTRADAS PARA LA PRIMERA CAPA DE CADA CASO DE ENTRENAMIENTO
 void copiar_input(_datos *origen, int cantidad)
 {
-    long double aux;
+    double aux;
     point_capa_cnn[0] = 1;
     for (int i=0; i<cantidad; i++) {
         aux = origen->data[i];
@@ -828,7 +872,7 @@ void copiar_input(_datos *origen, int cantidad)
 }
 
 //  NUMEROS ALEATORIOA DE DISTRIBUCION NORMAL
-void rand_distribucion_normal(long double *capa, int inicio, int num)
+void rand_distribucion_normal(double *capa, int inicio, int num)
 {
     unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
     //    double* ret = (double*)malloc(sizeof(double)*num);
@@ -841,10 +885,10 @@ void rand_distribucion_normal(long double *capa, int inicio, int num)
 }
 
 //  NUMEROS ALEATORIO ENTRE [0 y 1]
-void rand_cero_uno(long double *capa, int inicio, int num)
+void rand_cero_uno(double *capa, int inicio, int num)
 {
     for (int i = 0; i < num;i++){
-        capa[inicio + i] = (long double) rand()/RAND_MAX;
+        capa[inicio + i] = (double) rand()/RAND_MAX;
         cout<<capa[inicio + i]<<endl;
     };
 }
@@ -855,7 +899,7 @@ void dibujar_imagen(int posInicial, int posFinal, int alto, int ancho, int capas
     
     int cantidad_imagen = alto * ancho;
     
-    long double *arrayImag = (long double *)malloc(sizeof(long double) * cantidad_imagen);
+    double *arrayImag = (double *)malloc(sizeof(double) * cantidad_imagen);
     for (int k = 0; k < capas; k++)
     {
         for (int i = 0; i < cantidad_imagen; i++)
@@ -1019,7 +1063,8 @@ void imprimir_filtro_mlp(int pos1, int pos2 , int * neurona)
 //  RESULTADOS DEL TEST Y PRESICION
 void detalles_test(int contador_casos_entrenamiento,int contadorCasos, int contador, int clasificados)
 {
-    int acurracy = contador * 100 / contadorCasos;
+    double acurracy = double(contador) * 100.00 / double(contadorCasos);
+
     int noClasificados = contadorCasos - clasificados;
     cout<<endl<<"--------------------------------"<<endl;
     cout<<"Tiempo de Entrenamiento: "<< duration <<endl;
@@ -1074,6 +1119,135 @@ void liberar_memoria()
     free(puntero_aux);
     free(puntero_aux2);
 }
+
+
+void cargar_data_pesos(string archivo)
+{
+    cout<<"Load data weight"<<endl;
+    string numero;
+    int a,b;
+    
+    int inicio_filtro = (network[0][0] + network[0][3]) * (network[0][1] + network[0][3]) * network[0][2];
+    int total_filtro_cnn = network[1][0]* network[1][1]* network[1][2];
+    int cantidad_filtros_cnn = network[1][4];
+    
+    int inicio_filtro_capa1 = neurona[0]+1;
+    int total_filtro_mlp_capa1 = (neurona[0]+1) * neurona[1];
+    int inicio_filtro_capa2 = inicio_filtro_capa1 + total_filtro_mlp_capa1 + neurona[1]+1;
+    int total_filtro_mlp_capa2 = (neurona[1]+1) * neurona[2];
+    int lineaCont = 0;
+
+    ifstream file(archivo);
+    string value;
+    while (file.good())
+    {
+        getline ( file, value, '\n' );
+        int c = 0;
+        
+        if(lineaCont < cantidad_filtros_cnn)
+        {
+            //  recorremos cada linea del file e insertamos ceros al inicio y fin
+            a = (int)value.find(' ',c);
+            numero = value.substr(0,a);
+            capa_cnn[inicio_filtro + lineaCont * total_filtro_cnn] = stof(numero);
+            for (int i = 1; i< total_filtro_cnn; i++)
+            {
+                a = (int)value.find(' ',c);
+                b = (int)value.find(' ',a+1);
+                c = b;
+                numero = value.substr(a+1,b-a-1);
+                capa_cnn[inicio_filtro + i + lineaCont * total_filtro_cnn] = stof(numero);
+            }
+        
+        }else if(lineaCont == cantidad_filtros_cnn){
+            //  recorremos cada linea del file e insertamos ceros al inicio y fin
+            a = (int)value.find(' ',c);
+            numero = value.substr(0,a);
+            capa_mlp[inicio_filtro_capa1] = stof(numero);
+            for (int i = 1; i< total_filtro_mlp_capa1; i++)
+            {
+                a = (int)value.find(' ',c);
+                b = (int)value.find(' ',a+1);
+                c = b;
+                numero = value.substr(a+1,b-a-1);
+                capa_mlp[inicio_filtro_capa1 + i] = stof(numero);
+            }
+        }else if(lineaCont == cantidad_filtros_cnn+1){
+            //  recorremos cada linea del file e insertamos ceros al inicio y fin
+            a = (int)value.find(' ',c);
+            numero = value.substr(0,a);
+            capa_mlp[inicio_filtro_capa2] = stof(numero);
+            for (int i = 1; i< total_filtro_mlp_capa2; i++)
+            {
+                a = (int)value.find(' ',c);
+                b = (int)value.find(' ',a+1);
+                c = b;
+                numero = value.substr(a+1,b-a-1);
+                capa_mlp[inicio_filtro_capa2 + i] = stof(numero);
+            }
+        }
+        
+        lineaCont++;
+    }
+
+}
+
+
+void guardar_data_pesos(string ruta,int *imagen, int *filtro, int pos_imagen,int pos1, int pos2 , int * neurona)
+{
+    cout<<"Save data weight"<<endl;
+    
+    ofstream o(ruta);
+    int padding = 2 * imagen[3];
+    int ancho_imagen = imagen[0] + padding;
+    int profundidad_imagen = imagen[2];
+    
+    int num_filtros = filtro[4];
+    int ancho_filtro = filtro[0];
+    int pos_filtro = pos_imagen + ancho_imagen * ancho_imagen * profundidad_imagen;
+    string cadena = "";
+    
+    for (int k =0; k < num_filtros; k++)
+    {
+        for (int i=0; i<ancho_filtro; i++)
+        {
+            for (int j=0; j<ancho_filtro; j++)
+            {
+                cadena = cadena + to_string(capa_cnn[pos_filtro + j + (i*ancho_filtro) + (k * ancho_filtro * ancho_filtro)]) + " ";
+            }
+        }
+        cadena = cadena + "\n";
+    }
+    
+    
+    
+    int total1 = pos1 + neurona[0]+1 + (neurona[0]+1) * neurona[1];
+    
+    pos1 = pos1 + neurona[0]+1;
+    
+    for (int i = 0; i < neurona[1]; i++)
+    {
+        for (int j = 0; j < neurona[0]+1; j++)
+        {
+            cadena = cadena + to_string(capa_mlp[pos1 + j + i*(neurona[0]+1)]) + " ";
+        }
+    }
+    cadena = cadena + "\n";
+
+    
+    pos2 = pos2 + neurona[1]+1;
+    
+    for (int i = 0; i < neurona[2]; i++)
+    {
+        for (int j = 0; j < neurona[1]+1; j++)
+        {
+            cadena = cadena + to_string(capa_mlp[pos2 + j + i*(neurona[1]+1)]) + " ";
+        }
+    }
+    
+    o <<cadena;
+}
+
 
 
 
