@@ -1,0 +1,5 @@
+LEER
+
+la base de datos MNIST de imagenes 28x28 puedes descargarla del siguiente drive
+
+https://drive.google.com/open?id=0Bz-sW75WsEBURkhlOVB1YUVfSmM
