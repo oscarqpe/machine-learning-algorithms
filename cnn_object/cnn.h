@@ -1,6 +1,15 @@
 #ifndef __CNN__
 #define __CNN__
 
+#include        <chrono>
+#include "layer.h"
+#include <iostream>
+#include <random>
+#include <fstream>
+#include <ctime>
+
+#include <iostream>
+#include <random>
 using namespace std;
 
 struct _datos
@@ -58,7 +67,7 @@ public:
         dataset = NULL;
         matrix = NULL;
         matrix_aux = NULL;
-        typeAux = tLayer::image;
+        typeAux = image;
         
         int dim_target = 10;
         target = (double**)malloc(sizeof(double) * dim_target);
@@ -109,7 +118,7 @@ public:
                 // Forward Propagation
                 for (int index = 0; index < count_layer; index++)
                 {
-                    if (layer[index].type == tLayer::convol)
+                    if (layer[index].type == convol)
                     {
                         layer[index].process_convol2();
 //                        print_image(index+1,1);
@@ -119,7 +128,7 @@ public:
 //                        print_filter_convol(index + 1, 1, 2);
 //                        print_filter_convol(index + 1, 1, 3);
                     }
-                    else if (layer[index].type == tLayer::pool)
+                    else if (layer[index].type == pool)
                     {
                         layer[index].process_pool();
 //                        print_image(index+1,1);
@@ -147,13 +156,13 @@ public:
                         layer[index].process_mlp_back_init(target ,dataset[d].target, layer[index-1].pos_delta_start);
 //                        print_output_mlp(index+1);
                     }
-                    else if (layer[index].type == tLayer::fullyC)
+                    else if (layer[index].type == fullyC)
                     {
                         layer[index].process_mlp_back(layer[index-1].pos_delta_start);
 //                        print_output_mlp(index+1);
                     }
 //
-                    else if (layer[index].type == tLayer::pool)
+                    else if (layer[index].type == pool)
                     {
                         layer[index].process_pool_back(layer[index-1].pos_delta_start);
 //                        print_image(index+1, 1,"deltas");
@@ -161,7 +170,7 @@ public:
 //                        print_image(index+1, 3,"deltas");
                     }
                     
-                    else if (layer[index].type == tLayer::convol && layer[index].typeBefore == tLayer::image)
+                    else if (layer[index].type == convol && layer[index].typeBefore == image)
                     {
                         layer[index].process_convol_back_end();
 //                        print_image(index+1, 1,"deltas");
@@ -169,7 +178,7 @@ public:
 //                        print_image(index+1, 3,"deltas");
 
                     }
-                    else if (layer[index].type == tLayer::convol)
+                    else if (layer[index].type == convol)
                     {
 
                         layer[index].process_convol_back(layer[index-1].pos_delta_start);
@@ -195,12 +204,12 @@ public:
             copy_image_in_matrix(d);
             for (int index = 0; index < count_layer; index++)
             {
-                if (layer[index].type == tLayer::convol)
+                if (layer[index].type == convol)
                 {
                     layer[index].process_convol2();
 //                    print_image(index+1,1);
                 }
-                else if (layer[index].type == tLayer::pool)
+                else if (layer[index].type == pool)
                 {
                     layer[index].process_pool();
 //                    print_image(index+1,1);
@@ -326,10 +335,10 @@ public:
         if(indexLayer == 0)
             cout<<endl<<"Matrix Image [dimension "<<dimension<<"x"<<dimension<<" Slide "<<num_slide<<"]"<<endl<<endl;
         
-        else if (layer[indexLayer-1].type == tLayer::convol)
+        else if (layer[indexLayer-1].type == convol)
             cout<<endl<<"Matrix"<<strname<<" Convol [capa "<<indexLayer<<" Slide "<<num_slide<<"]"<<endl<<endl;
         
-        else if (layer[indexLayer-1].type == tLayer::pool)
+        else if (layer[indexLayer-1].type == pool)
             cout<<endl<<"Matrix"<<strname<<" Poll [capa "<<indexLayer<<" Slide "<<num_slide<<"]"<<endl<<endl;
         
         
@@ -459,7 +468,7 @@ public:
         layer[indice].deep_input = deep_input;
         
         
-        if (type == tLayer::convol)
+        if (type == convol)
         {
             // Filtros convolucion
             layer[indice].dim_filter = val1;
@@ -467,7 +476,7 @@ public:
             layer[indice].jump = val3;
             layer[indice].deep_filter= deep_input;
             
-        }else if (type == tLayer::pool)
+        }else if (type == pool)
         {
             // Pooling
             layer[indice].dim_filter = val1;
@@ -475,10 +484,10 @@ public:
             layer[indice].num_filter = deep_input;
             layer[indice].deep_filter = 0;
             
-        }else if (type == tLayer::fullyC)
+        }else if (type == fullyC)
         {
             // Fully Conected
-            if (typeAux != tLayer::fullyC)
+            if (typeAux != fullyC)
                 layer[indice].dim_input = dim_input * dim_input * deep_input;
             else
                 layer[indice].dim_input = dim_input;
@@ -495,7 +504,7 @@ public:
             exit(1);
         }
         
-        if (type != tLayer::fullyC)
+        if (type != fullyC)
         {
             // Hallamos la dimension del resultado
             double dim_input_aux = layer[indice].dim_input;
@@ -526,7 +535,7 @@ public:
         int total_aux = 0;
         for (int i = 0; i < count_layer; i++)
         {
-            if (layer[i].type != tLayer::fullyC)
+            if (layer[i].type !=  fullyC)
             {
                 layer[i].pos_input_start = total;
                 
@@ -556,7 +565,7 @@ public:
             }
         }
         
-        if (layer[count_layer-1].type != tLayer::fullyC)
+        if (layer[count_layer-1].type !=  fullyC)
             total = total + layer[count_layer-1].dim_out * layer[count_layer-1].dim_out * layer[count_layer-1].deep_out;
         else
             total = total + layer[count_layer-1].dim_out;
@@ -576,14 +585,14 @@ public:
         for (int i = 0; i < count_layer; i++)
         {
             // Inicializacion de filtros
-            if(layer[i].type == tLayer::convol)
+            if(layer[i].type ==  convol)
             {
                 set_filter(i);
                 set_matrix_zeros(i);
-            }else if (layer[i].type == tLayer::pool)
+            }else if (layer[i].type ==  pool)
             {
                 set_pool_matrix_min(i);
-            }else if (layer[i].type == tLayer::fullyC)
+            }else if (layer[i].type ==  fullyC)
             {
                 set_filter(i);
                 set_matrix_zeros(i);
@@ -606,7 +615,7 @@ public:
         int i = index_layer;
         int total_filter;
         
-        if (layer[i].type != tLayer::fullyC)
+        if (layer[i].type !=  fullyC)
             total_filter = layer[i].dim_filter * layer[i].dim_filter * layer[i].deep_filter;
         else
             total_filter = (layer[i].dim_input + 1) * layer[i].dim_out;
@@ -625,7 +634,7 @@ public:
         int i = index_layer;
         int total_convol;
         
-        if (layer[i].type != tLayer::fullyC)
+        if (layer[i].type !=  fullyC)
             total_convol = layer[i].dim_out * layer[i].dim_out * layer[i].deep_out;
         else
             total_convol = layer[i].dim_out;
@@ -854,7 +863,7 @@ public:
         int spad = pad_image;
         
 //        int spadding = pad_image;
-        word = word + "image:"+to_string((int)(tLayer::image))+" "+to_string(sdimension)+" "+to_string(schannel)+" "+to_string(spad);
+        word = word + "image:"+to_string((int)( image))+" "+to_string(sdimension)+" "+to_string(schannel)+" "+to_string(spad);
         osave<<word<<endl;
         
         //  Guardamos la arquitectura
@@ -862,7 +871,7 @@ public:
         {
             stype = (int)layer[i].type;
             switch (layer[i].type) {
-                case tLayer::convol:
+                case  convol:
                 {
                     int sdim_filter = layer[i].dim_filter;
                     int snum_filter = layer[i].num_filter;
@@ -870,14 +879,14 @@ public:
                     word = "convol:"+to_string(stype)+" "+to_string(sdim_filter)+" "+to_string(snum_filter)+" "+to_string(sjump);
                     break;
                 }
-                case tLayer::pool:
+                case  pool:
                 {
                     int sdim_filter = layer[i].dim_filter;
                     int sjump = layer[i].jump;
                     word = "pool:"+to_string(stype)+" "+to_string(sdim_filter)+" "+to_string(sjump);
                     break;
                 }  
-                case tLayer::fullyC:
+                case  fullyC:
                 {
                     int sdim_out = layer[i].dim_out;
                     word = "fullyC:"+to_string(stype)+" "+to_string(sdim_out);
@@ -900,7 +909,7 @@ public:
             sindex = i;
             switch (layer[i].type)
             {
-                case tLayer::convol:
+                case  convol:
                 {
                     spos_filter = layer[i].pos_filter_start;
                     stotal_filter = layer[i].dim_filter * layer[i].dim_filter * layer[i].deep_filter * layer[i].num_filter;
@@ -908,7 +917,7 @@ public:
                     osave<<endl;
                     break;
                 }
-                case tLayer::fullyC:
+                case  fullyC:
                 {
                     spos_filter = layer[i].pos_filter_start;
                     stotal_filter = (layer[i].dim_input+1) * layer[i].dim_out;
@@ -958,7 +967,7 @@ public:
                 type = stoi(value.substr(a+1,b-a));
                 //  Cargamos la configuracion de la red
                 switch (type) {
-                    case (int)tLayer::image:
+                    case (int) image:
                     {
                         a = b+1;
                         b = (int)value.find(" ",a);
@@ -976,7 +985,7 @@ public:
                         cout<<"    Set Image: "<<ldim_image<<" "<<lchannel<<" "<<lpad_image<<" "<<endl;
                         break;
                     }
-                    case (int)tLayer::convol:
+                    case (int) convol:
                     {
                         a = b+1;
                         b = (int)value.find(" ",a);
@@ -990,11 +999,11 @@ public:
                         b = (int)value.find(" ",a);
                         int ljump_conv = stoi(value.substr(a,b-a));
                         
-                        insert_layer(tLayer::convol,ldim_conv,lnum_filter,ljump_conv);
+                        insert_layer( convol,ldim_conv,lnum_filter,ljump_conv);
                         cout<<"    Insert Layer Convol: "<<ldim_conv<<" "<<lnum_filter<<" "<<ljump_conv<<" "<<endl;
                         break;
                     }
-                    case (int)tLayer::pool:
+                    case (int) pool:
                     {
                         a = b+1;
                         b = (int)value.find(" ",a);
@@ -1004,17 +1013,17 @@ public:
                         b = (int)value.find(" ",a);
                         int ljump_pool = stoi(value.substr(a,b-a));
                         
-                        insert_layer(tLayer::pool,ldim_pool,ljump_pool);
+                        insert_layer( pool,ldim_pool,ljump_pool);
                         cout<<"    Insert Layer Pool: "<<ldim_pool<<" "<<ljump_pool<<endl;
                         break;
                     }
-                    case (int)tLayer::fullyC:
+                    case (int) fullyC:
                     {
                         a = b+1;
                         b = (int)value.find(" ",a);
                         int ldim_fc = stoi(value.substr(a,b-a));
                         
-                        insert_layer(tLayer::fullyC,ldim_fc);
+                        insert_layer( fullyC,ldim_fc);
                         cout<<"    Insert Layer Fc: "<<ldim_fc<<endl;
                         break;
                     }
@@ -1041,14 +1050,14 @@ public:
                 int ltotal_filter = 0;
                 switch (type)
                 {
-                    case (int)tLayer::convol:
+                    case (int) convol:
                     {
                         lpos_filter = layer[index].pos_filter_start;
                         ltotal_filter = layer[index].dim_filter * layer[index].dim_filter * layer[index].deep_filter * layer[index].num_filter;
 
                         break;
                     }
-                    case (int)tLayer::fullyC:
+                    case (int) fullyC:
                     {
                         lpos_filter = layer[index].pos_filter_start;
                         ltotal_filter = (layer[index].dim_input+1) * layer[index].dim_out;

@@ -1,10 +1,15 @@
 #ifndef __LAYER__
 #define __LAYER__
 
+#include <cstddef>
+#include <cmath>
+
 using namespace std;
 
-enum class tLayer{image = 0, convol = 1, pool = 2, fullyC = 3};
-enum class tData{train, test};
+
+
+enum  tLayer{image = 0, convol = 1, pool = 2, fullyC = 3};
+enum  tData{train, test};
 class _layer
 {
 
@@ -302,7 +307,7 @@ public:
             }
         }
 //
-        if (typeBefore == tLayer::fullyC)
+        if (typeBefore == fullyC)
         {
             
             for (int i=0; i < dim_input; i++)
