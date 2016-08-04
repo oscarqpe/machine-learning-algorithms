@@ -13,9 +13,9 @@ opt = lapp[[
    -m,--momentum              (default 0.9)         momentum
    --epoch_step               (default 25)          epoch step
    --model                    (default vgg_bn_drop)     model name
-   --max_epoch                (default 2)           maximum number of iterations
+   --max_epoch                (default 10)           maximum number of iterations
    --backend                  (default nn)            backend
-   --type                     (default float)          cuda/float/cl
+   --type                     (default cuda)          cuda/float/cl
 ]]
 
 print(opt)
@@ -97,7 +97,7 @@ optimState = {
   learningRateDecay = opt.learningRateDecay,
 }
 
-
+epoch = epoch or 1
 function train()
   model:training()
   epoch = epoch or 1
@@ -124,11 +124,15 @@ function train()
       gradParameters:zero()
       
       local outputs = model:forward(inputs)
-      print("------------------------------------")
-      print("Imprimiendo outputs")
-      print(outputs)
-      print("------------------------------------")
+      -- print("-------------------------------------")
+      -- print("Imprimiendo outputs")
+      -- print("-------------------------------------")
+      -- print(outputs)
       local f = criterion:forward(outputs, targets)
+      -- print("-------------------------------------")
+      -- print("Imprimiendo outputs criterion")
+      -- print("-------------------------------------")
+      -- print(f)
       local df_do = criterion:backward(outputs, targets)
       model:backward(inputs, df_do)
 
@@ -202,7 +206,7 @@ function test()
   end
 
   -- save model every 50 epochs
-  if epoch % 2 == 0 then
+  if epoch % 10 == 0 then
     local filename = paths.concat(opt.save, 'model.net')
     print('==> saving model to '..filename)
     torch.save(filename, model:get(3):clearState())
@@ -216,26 +220,126 @@ function file_exists(name)
    if f~=nil then io.close(f) return true else return false end
 end
 
+function guardarCSV(capa, numIter)
 
+  --DEL TRAIN
+  model:evaluate()
+  epoch = epoch or 1
+
+  -- drop learning rate every "epoch_step" epochs
+  -- if epoch % opt.epoch_step == 0 then optimState.learningRate = optimState.learningRate/2 end
+    print("-----------------------------------------")
+    print("Guardando csv en epoca ".. tostring(epoch))
+    print("-----------------------------------------")
+    print(c.blue '==>'.."    train")
+    -- print(c.blue '==>'.." online epoch # " .. epoch .. ' [batchSize = ' .. opt.batchSize .. ']')
+
+    local targets = cast(torch.FloatTensor(opt.batchSize))
+    local indices = torch.randperm(provider.trainData.data:size(1)):long():split(opt.batchSize)
+  -- remove last element so that all the batches have equal size
+    indices[#indices] = nil
+
+    local tic = torch.tic()
+    for t,v in ipairs(indices) do
+      xlua.progress(t, #indices)
+
+      local inputs = provider.trainData.data:index(1,v)
+      targets:copy(provider.trainData.labels:index(1,v))
+
+      local feval = function(x)
+      if x ~= parameters then parameters:copy(x) end
+      gradParameters:zero()
+        
+      local outputs = model:forward(inputs)
+      local f = criterion:forward(outputs, targets)
+
+      -- local df_do = criterion:backward(outputs, targets)
+      -- model:backward(inputs, df_do)
+      convertToCsv(PenultimaCapa,targets,tostring(numIter) .. "Train")
+      confusion:batchAdd(outputs, targets)
+
+      return f,gradParameters
+    end
+    optim.sgd(feval, parameters, optimState)
+  end
+
+  confusion:updateValids()
+  print(('Train accuracy: '..c.cyan'%.2f'..' %%\t time: %.2f s'):format(
+        confusion.totalValid * 100, torch.toc(tic)))
+
+  train_acc = confusion.totalValid * 100
+
+  confusion:zero()
+  -- epoch = epoch + 1
+
+   --DEL TEST
+  print(c.blue '==>'.."    test")
+  local bs = 125
+  for i=1,provider.testData.data:size(1),bs do
+    local inputs = provider.testData.data:narrow(1,i,bs)
+    local outputs = model:forward(inputs)
+    local targets =  provider.testData.labels:narrow(1,i,bs)
+    convertToCsv(PenultimaCapa,targets,tostring(numIter) .. "Test" )
+    confusion:batchAdd(outputs, targets)
+  end
+
+  confusion:updateValids()
+  print('Test accuracy:', confusion.totalValid * 100)
+
+  confusion:zero()
+end
+
+function convertToCsv(capa , targets, name )
+   local file = io.open( "saveOutputs/" .. name .. ".csv", "a")
+   local tamanoOut = capa.output:size()[1]
+   local tamanoIn = capa.output:size()[2]
+   for i=1,tamanoOut do
+      file:write( tostring(targets[i]) .. ";")
+      for j=1,tamanoIn do
+         file:write(tostring(capa.output[i][j]) .. ";")
+      end
+      file:write("\n")
+   end
+   file:close()
+end
+
+
+function file_exists(name)
+   local f=io.open(name,"r")
+   if f~=nil then io.close(f) return true else return false end
+end
+
+function cargarPesosAnteriores()
+  filename = paths.concat(opt.save,'model.net')
+  if file_exists(filename) then
+     print("------------------------------------------------")
+     print("Cargando pesos anteriores")
+     print("------------------------------------------------")
+     model = torch.load(filename)
+  else
+     print("------------------------------------------------")
+     print("Empezando modelo desde cero")
+     print("------------------------------------------------")
+  end
+end
 
 ------------------
 --Main
 ------------------
-filename = paths.concat(opt.save,'model.net')
-if file_exists(filename) then
-   print("------------------------------------------------")
-   print("Cargando pesos anteriores")
-   print("------------------------------------------------")
-   model = torch.load(filename)
-else
-   print("------------------------------------------------")
-   print("Empezando modelo desde cero")
-   print("------------------------------------------------")
-end
+
+PenultimaCapa = model:get(3):get(54):get(2)
+paths.mkdir("saveOutputs")
+cadaCuanto = 3
 
 for i=1,opt.max_epoch do
+  print("/-/-/-/-/-/-/- Epoca ".. tostring(i) .. "-/-/-/-/-/-/-/-/")
   train()
   test()
+
+  if i %  cadaCuanto == 0
+  then
+    guardarCSV(PenultimaCapa,i/cadaCuanto)
+  end
 end
 
 
